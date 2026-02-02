@@ -153,7 +153,9 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert('Error', 'Please enter an answer.');
       return;
     }
-    const correct = userAnswer.trim().toLowerCase() === questions[currentIndex].answer.trim().toLowerCase();
+    const normalizedUserAnswer = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
+    const normalizedCorrectAnswer = questions[currentIndex].answer.trim().toLowerCase().replace(/\s+/g, ' ');
+    const correct = normalizedUserAnswer === normalizedCorrectAnswer;
     const newScore = score + (correct ? 1 : -1);
     setScore(newScore);
     await AsyncStorage.setItem('score', newScore.toString());
@@ -162,7 +164,16 @@ const HomeScreen = ({ navigation }) => {
       setCurrentIndex(currentIndex + 1);
     } else {
       Alert.alert('Quiz Complete', `Final Score: ${newScore}`, [
-        { text: 'Restart', onPress: () => setCurrentIndex(0) },
+        { text: 'Restart', onPress: async () => {
+          setCurrentIndex(0);
+          setScore(0);
+          setUserAnswer('');
+          try {
+            await AsyncStorage.setItem('score', '0');
+          } catch (error) {
+            console.error('Failed to reset score', error);
+          }
+        }},
         { text: 'OK' },
       ]);
     }
@@ -212,7 +223,7 @@ const HomeScreen = ({ navigation }) => {
           multiline
         />
         <TouchableOpacity style={styles.submitQuizButton} onPress={handleSubmit}>
-          <Text style={styles.submitQuizButtonText}>Submit Answer</Text>
+          <Text style={styles.submitQuizButtonText}>Submit</Text>
         </TouchableOpacity>
         <Text style={styles.progressText}>
           {currentIndex + 1} / {questions.length}
@@ -400,6 +411,8 @@ const styles = StyleSheet.create({
     padding: 32,
     marginBottom: 32,
     alignItems: 'center',
+    height: height * 0.5,
+    justifyContent: 'center',
   },
   questionText: {
     fontFamily: 'Nunito_600SemiBold',
