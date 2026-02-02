@@ -137,6 +137,17 @@ const HomeScreen = ({ navigation }) => {
     }, [])
   );
 
+  const handleReset = async () => {
+    setScore(0);
+    setCurrentIndex(0);
+    setUserAnswer('');
+    try {
+      await AsyncStorage.setItem('score', '0');
+    } catch (error) {
+      console.error('Failed to reset score', error);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!userAnswer.trim()) {
       Alert.alert('Error', 'Please enter an answer.');
@@ -176,9 +187,14 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Text style={styles.scoreText}>Score: {score}</Text>
-          <TouchableOpacity style={styles.addButtonTop} onPress={() => navigation.navigate('QuestionBank')}>
-            <Text style={styles.addButtonTextTop}>+ Add</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+              <Text style={styles.resetButtonText}>Reset</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addButtonTop} onPress={() => navigation.navigate('QuestionBank')}>
+              <Text style={styles.addButtonTextTop}>+ Add</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={styles.title}>Quiz</Text>
         <Text style={styles.subtitle}>Answer the question below</Text>
@@ -269,9 +285,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   scoreText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 20,
+    color: '#FFFFFF',
+  },
+  resetButton: {
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  resetButtonText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 14,
     color: '#FFFFFF',
   },
   addButtonTop: {
