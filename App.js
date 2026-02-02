@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -116,6 +116,7 @@ const HomeScreen = ({ navigation }) => {
   const [score, setScore] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
+  const animatedColor = useRef(new Animated.Value(0)).current;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -156,27 +157,42 @@ const HomeScreen = ({ navigation }) => {
     const normalizedUserAnswer = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
     const normalizedCorrectAnswer = questions[currentIndex].answer.trim().toLowerCase().replace(/\s+/g, ' ');
     const correct = normalizedUserAnswer === normalizedCorrectAnswer;
-    const newScore = score + (correct ? 1 : -1);
-    setScore(newScore);
-    await AsyncStorage.setItem('score', newScore.toString());
-    setUserAnswer('');
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      Alert.alert('Quiz Complete', `Final Score: ${newScore}`, [
-        { text: 'Restart', onPress: async () => {
-          setCurrentIndex(0);
-          setScore(0);
-          setUserAnswer('');
-          try {
-            await AsyncStorage.setItem('score', '0');
-          } catch (error) {
-            console.error('Failed to reset score', error);
-          }
-        }},
-        { text: 'OK' },
-      ]);
-    }
+
+    // Animate color
+    Animated.timing(animatedColor, {
+      toValue: correct ? 1 : 2,
+      duration: 1000,
+      useNativeDriver: false,
+    }).start(() => {
+      // After animation, update score and proceed
+      const newScore = score + (correct ? 1 : -1);
+      setScore(newScore);
+      AsyncStorage.setItem('score', newScore.toString()).catch(error => console.error('Failed to save score', error));
+      setUserAnswer('');
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        Alert.alert('Quiz Complete', `Final Score: ${newScore}`, [
+          { text: 'Restart', onPress: async () => {
+            setCurrentIndex(0);
+            setScore(0);
+            setUserAnswer('');
+            try {
+              await AsyncStorage.setItem('score', '0');
+            } catch (error) {
+              console.error('Failed to reset score', error);
+            }
+          }},
+          { text: 'OK' },
+        ]);
+      }
+      // Reset color back to default
+      Animated.timing(animatedColor, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: false,
+      }).start();
+    });
   };
 
   if (questions.length === 0) {
@@ -211,9 +227,12 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.subtitle}>Answer the question below</Text>
       </View>
       <View style={styles.quizContainer}>
-        <View style={styles.questionCard}>
+        <Animated.View style={[styles.questionCard, { backgroundColor: animatedColor.interpolate({
+          inputRange: [0, 1, 2],
+          outputRange: ['#1A1A2E', '#90EE90', '#FF6B6B']
+        }) }]}>
           <Text style={styles.questionText}>{questions[currentIndex].question}</Text>
-        </View>
+        </Animated.View>
         <TextInput
           style={styles.answerInput}
           placeholder="Your answer"
@@ -429,7 +448,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_400Regular',
     fontSize: 16,
     marginBottom: 24,
-    minHeight: 80,
+    minHeight: 40,
     textAlignVertical: 'top',
   },
   submitQuizButton: {
