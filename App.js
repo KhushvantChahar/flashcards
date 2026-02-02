@@ -16,6 +16,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-goo
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -116,23 +117,25 @@ const HomeScreen = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const storedQuestions = await AsyncStorage.getItem('questions');
-        if (storedQuestions) {
-          setQuestions(JSON.parse(storedQuestions));
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadData = async () => {
+        try {
+          const storedQuestions = await AsyncStorage.getItem('questions');
+          if (storedQuestions) {
+            setQuestions(JSON.parse(storedQuestions));
+          }
+          const storedScore = await AsyncStorage.getItem('score');
+          if (storedScore) {
+            setScore(parseInt(storedScore, 10));
+          }
+        } catch (error) {
+          console.error('Failed to load data', error);
         }
-        const storedScore = await AsyncStorage.getItem('score');
-        if (storedScore) {
-          setScore(parseInt(storedScore, 10));
-        }
-      } catch (error) {
-        console.error('Failed to load data', error);
-      }
-    };
-    loadData();
-  }, []);
+      };
+      loadData();
+    }, [])
+  );
 
   const handleSubmit = async () => {
     if (!userAnswer.trim()) {
