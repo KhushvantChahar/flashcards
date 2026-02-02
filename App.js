@@ -116,7 +116,7 @@ const HomeScreen = ({ navigation }) => {
   const [score, setScore] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
-  const animatedColor = useRef(new Animated.Value(0)).current;
+  const [questionBgColor, setQuestionBgColor] = useState('#1A1A2E');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -158,16 +158,15 @@ const HomeScreen = ({ navigation }) => {
     const normalizedCorrectAnswer = questions[currentIndex].answer.trim().toLowerCase().replace(/\s+/g, ' ');
     const correct = normalizedUserAnswer === normalizedCorrectAnswer;
 
-    // Animate color
-    Animated.timing(animatedColor, {
-      toValue: correct ? 1 : 2,
-      duration: 1000,
-      useNativeDriver: false,
-    }).start(() => {
-      // After animation, update score and proceed
+    // Set color immediately
+    setQuestionBgColor(correct ? '#90EE90' : '#FF6B6B');
+
+    // After 1 second, reset and proceed
+    setTimeout(async () => {
+      setQuestionBgColor('#1A1A2E');
       const newScore = score + (correct ? 1 : -1);
       setScore(newScore);
-      AsyncStorage.setItem('score', newScore.toString()).catch(error => console.error('Failed to save score', error));
+      await AsyncStorage.setItem('score', newScore.toString()).catch(error => console.error('Failed to save score', error));
       setUserAnswer('');
       if (currentIndex < questions.length - 1) {
         setCurrentIndex(currentIndex + 1);
@@ -186,13 +185,7 @@ const HomeScreen = ({ navigation }) => {
           { text: 'OK' },
         ]);
       }
-      // Reset color back to default
-      Animated.timing(animatedColor, {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: false,
-      }).start();
-    });
+    }, 1000);
   };
 
   if (questions.length === 0) {
@@ -227,12 +220,9 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.subtitle}>Answer the question below</Text>
       </View>
       <View style={styles.quizContainer}>
-        <Animated.View style={[styles.questionCard, { backgroundColor: animatedColor.interpolate({
-          inputRange: [0, 1, 2],
-          outputRange: ['#1A1A2E', '#90EE90', '#FF6B6B']
-        }) }]}>
+        <View style={[styles.questionCard, { backgroundColor: questionBgColor }]}>
           <Text style={styles.questionText}>{questions[currentIndex].question}</Text>
-        </Animated.View>
+        </View>
         <TextInput
           style={styles.answerInput}
           placeholder="Your answer"
